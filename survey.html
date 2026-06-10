@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>แบบสอบถาม - เก็บชื่อและเบอร์โทร</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --bg: #f1f5f9;
+      --card: #ffffff;
+      --text: #0f172a;
+      --muted: #64748b;
+      --border: #e2e8f0;
+      --error: #dc2626;
+      --success: #16a34a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, "Segoe UI", "Sarabun", Tahoma, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 24px 16px;
+      line-height: 1.6;
+    }
+    .container { max-width: 560px; margin: 0 auto; }
+    .card {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 28px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+      margin-bottom: 24px;
+    }
+    h1 { font-size: 22px; margin: 0 0 4px; }
+    .subtitle { color: var(--muted); margin: 0 0 24px; font-size: 14px; }
+    label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px; }
+    .required { color: var(--error); }
+    input[type="text"], input[type="tel"] {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 16px;
+      margin-bottom: 4px;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37,99,235,0.15);
+    }
+    .field { margin-bottom: 20px; }
+    .error-msg { color: var(--error); font-size: 13px; min-height: 18px; display: block; }
+    button {
+      width: 100%;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      padding: 14px;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .15s;
+    }
+    button:hover { background: var(--primary-dark); }
+    .toast {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      color: var(--success);
+      padding: 12px 16px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      display: none;
+    }
+    .responses-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .responses-head h2 { font-size: 18px; margin: 0; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--border); }
+    th { color: var(--muted); font-weight: 600; }
+    .empty { color: var(--muted); font-size: 14px; text-align: center; padding: 24px 0; }
+    .actions { display: flex; gap: 8px; }
+    .btn-secondary {
+      width: auto;
+      background: #fff;
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .btn-secondary:hover { background: var(--bg); }
+    .del {
+      color: var(--error);
+      cursor: pointer;
+      background: none;
+      border: none;
+      width: auto;
+      font-size: 18px;
+      padding: 0 4px;
+    }
+    .del:hover { background: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <h1>แบบสอบถาม</h1>
+      <p class="subtitle">กรุณากรอกชื่อและเบอร์โทรศัพท์ของท่าน</p>
+
+      <div class="toast" id="toast">✓ บันทึกข้อมูลเรียบร้อยแล้ว ขอบคุณค่ะ</div>
+
+      <form id="surveyForm" novalidate>
+        <div class="field">
+          <label for="name">ชื่อ-นามสกุล <span class="required">*</span></label>
+          <input type="text" id="name" name="name" placeholder="เช่น สมชาย ใจดี" autocomplete="name" />
+          <span class="error-msg" id="nameError"></span>
+        </div>
+
+        <div class="field">
+          <label for="phone">เบอร์โทรศัพท์ <span class="required">*</span></label>
+          <input type="tel" id="phone" name="phone" placeholder="เช่น 0812345678" autocomplete="tel" inputmode="numeric" maxlength="10" />
+          <span class="error-msg" id="phoneError"></span>
+        </div>
+
+        <button type="submit">ส่งข้อมูล</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <div class="responses-head">
+        <h2>รายการที่บันทึก (<span id="count">0</span>)</h2>
+        <div class="actions">
+          <button type="button" class="btn-secondary" id="exportBtn">ดาวน์โหลด CSV</button>
+          <button type="button" class="btn-secondary" id="clearBtn">ล้างทั้งหมด</button>
+        </div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>ชื่อ-นามสกุล</th>
+            <th>เบอร์โทร</th>
+            <th>เวลา</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+      <div class="empty" id="emptyState">ยังไม่มีข้อมูล</div>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = "survey_responses";
+    const form = document.getElementById("surveyForm");
+    const nameInput = document.getElementById("name");
+    const phoneInput = document.getElementById("phone");
+    const nameError = document.getElementById("nameError");
+    const phoneError = document.getElementById("phoneError");
+    const toast = document.getElementById("toast");
+    const tbody = document.getElementById("tbody");
+    const countEl = document.getElementById("count");
+    const emptyState = document.getElementById("emptyState");
+
+    // เบอร์โทรไทย: ตัวเลข 9-10 หลัก
+    const phonePattern = /^0\d{8,9}$/;
+
+    function loadResponses() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+      } catch { return []; }
+    }
+
+    function saveResponses(data) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    }
+
+    function render() {
+      const data = loadResponses();
+      countEl.textContent = data.length;
+      tbody.innerHTML = "";
+      emptyState.style.display = data.length ? "none" : "block";
+
+      data.forEach((r, i) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${i + 1}</td>
+          <td>${escapeHtml(r.name)}</td>
+          <td>${escapeHtml(r.phone)}</td>
+          <td>${r.time}</td>
+          <td><button class="del" data-id="${r.id}" title="ลบ">×</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, c =>
+        ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+    }
+
+    function validate() {
+      let ok = true;
+      nameError.textContent = "";
+      phoneError.textContent = "";
+
+      if (!nameInput.value.trim()) {
+        nameError.textContent = "กรุณากรอกชื่อ-นามสกุล";
+        ok = false;
+      }
+      const phone = phoneInput.value.trim();
+      if (!phone) {
+        phoneError.textContent = "กรุณากรอกเบอร์โทรศัพท์";
+        ok = false;
+      } else if (!phonePattern.test(phone)) {
+        phoneError.textContent = "เบอร์โทรไม่ถูกต้อง (ตัวเลข 9-10 หลัก ขึ้นต้นด้วย 0)";
+        ok = false;
+      }
+      return ok;
+    }
+
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      if (!validate()) return;
+
+      const data = loadResponses();
+      data.push({
+        id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+        name: nameInput.value.trim(),
+        phone: phoneInput.value.trim(),
+        time: new Date().toLocaleString("th-TH")
+      });
+      saveResponses(data);
+      render();
+
+      form.reset();
+      toast.style.display = "block";
+      setTimeout(() => { toast.style.display = "none"; }, 3000);
+      nameInput.focus();
+    });
+
+    // เบอร์โทร: อนุญาตเฉพาะตัวเลข
+    phoneInput.addEventListener("input", () => {
+      phoneInput.value = phoneInput.value.replace(/\D/g, "");
+    });
+
+    tbody.addEventListener("click", (e) => {
+      if (e.target.classList.contains("del")) {
+        const id = e.target.dataset.id;
+        saveResponses(loadResponses().filter(r => r.id !== id));
+        render();
+      }
+    });
+
+    document.getElementById("clearBtn").addEventListener("click", () => {
+      if (confirm("ต้องการล้างข้อมูลทั้งหมดใช่หรือไม่?")) {
+        localStorage.removeItem(STORAGE_KEY);
+        render();
+      }
+    });
+
+    document.getElementById("exportBtn").addEventListener("click", () => {
+      const data = loadResponses();
+      if (!data.length) { alert("ยังไม่มีข้อมูลให้ดาวน์โหลด"); return; }
+      const rows = [["ลำดับ", "ชื่อ-นามสกุล", "เบอร์โทร", "เวลา"]];
+      data.forEach((r, i) => rows.push([i + 1, r.name, r.phone, r.time]));
+      const csv = "﻿" + rows.map(row =>
+        row.map(c => `"${String(c).replace(/"/g, '""')}"`).join(",")
+      ).join("\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "survey_responses.csv";
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    render();
+  </script>
+</body>
+</html>

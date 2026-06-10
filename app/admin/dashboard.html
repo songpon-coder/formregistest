@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>หลังบ้าน - จัดการข้อมูล</title>
+  <style>
+    :root {
+      --primary: #2563eb; --bg: #f1f5f9; --card: #fff; --text: #0f172a;
+      --muted: #64748b; --border: #e2e8f0; --error: #dc2626;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, "Segoe UI", "Sarabun", Tahoma, sans-serif;
+      background: var(--bg); color: var(--text); margin: 0; line-height: 1.6;
+    }
+    header {
+      background: #0f172a; color: #fff; padding: 16px 24px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    header h1 { font-size: 18px; margin: 0; }
+    header .right { display: flex; gap: 12px; align-items: center; }
+    .logout {
+      background: rgba(255,255,255,0.12); color: #fff; border: none;
+      padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer;
+    }
+    .logout:hover { background: rgba(255,255,255,0.22); }
+    .container { max-width: 900px; margin: 0 auto; padding: 24px 16px; }
+    .stats { display: flex; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
+    .stat {
+      background: var(--card); border-radius: 12px; padding: 20px 24px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05); flex: 1; min-width: 160px;
+    }
+    .stat .num { font-size: 32px; font-weight: 800; color: var(--primary); }
+    .stat .lbl { color: var(--muted); font-size: 13px; }
+    .card {
+      background: var(--card); border-radius: 12px; padding: 20px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+    .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; gap: 12px; flex-wrap: wrap; }
+    .toolbar h2 { font-size: 16px; margin: 0; }
+    .toolbar .actions { display: flex; gap: 8px; }
+    .btn {
+      background: #fff; color: var(--text); border: 1px solid var(--border);
+      padding: 8px 14px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: none;
+    }
+    .btn:hover { background: var(--bg); }
+    .btn-primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .btn-primary:hover { background: #1d4ed8; }
+    .search { padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; width: 220px; max-width: 100%; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { text-align: left; padding: 12px 10px; border-bottom: 1px solid var(--border); }
+    th { color: var(--muted); font-weight: 600; font-size: 13px; }
+    tbody tr:hover { background: #f8fafc; }
+    .del { color: var(--error); cursor: pointer; background: none; border: none; font-size: 20px; padding: 0 6px; }
+    .empty { color: var(--muted); text-align: center; padding: 40px 0; }
+    @media (max-width: 600px) { .hide-sm { display: none; } }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>📋 ระบบหลังบ้าน</h1>
+    <div class="right">
+      <span style="font-size:13px;opacity:.8" id="adminName">admin</span>
+      <button class="logout" id="logoutBtn">ออกจากระบบ</button>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="stats">
+      <div class="stat">
+        <div class="num" id="totalCount">0</div>
+        <div class="lbl">จำนวนผู้ตอบทั้งหมด</div>
+      </div>
+      <div class="stat">
+        <div class="num" id="todayCount">0</div>
+        <div class="lbl">วันนี้</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="toolbar">
+        <h2>รายการแบบสอบถาม</h2>
+        <div class="actions">
+          <input type="text" class="search" id="search" placeholder="🔍 ค้นหาชื่อ/เบอร์..." />
+          <a href="/api/export" class="btn">📥 CSV</a>
+          <button class="btn btn-primary" id="refreshBtn">↻ รีเฟรช</button>
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>ชื่อ-นามสกุล</th>
+              <th>เบอร์โทร</th>
+              <th class="hide-sm">เวลา</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+      <div class="empty" id="empty" style="display:none">ยังไม่มีข้อมูล</div>
+    </div>
+  </div>
+
+  <script>
+    let allData = [];
+
+    function esc(s) {
+      return String(s).replace(/[&<>"']/g, c =>
+        ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+    }
+
+    function render(list) {
+      const tbody = document.getElementById("tbody");
+      const empty = document.getElementById("empty");
+      tbody.innerHTML = "";
+      empty.style.display = list.length ? "none" : "block";
+      list.forEach((r, i) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${i + 1}</td>
+          <td>${esc(r.name)}</td>
+          <td>${esc(r.phone)}</td>
+          <td class="hide-sm">${esc(r.time || "")}</td>
+          <td><button class="del" data-id="${r.id}" title="ลบ">×</button></td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function updateStats() {
+      document.getElementById("totalCount").textContent = allData.length;
+      const today = new Date().toLocaleDateString("th-TH").split(" ")[0];
+      // นับจาก time string รูปแบบ dd/mm/yyyy
+      const todayStr = new Date().toLocaleDateString("en-GB"); // dd/mm/yyyy
+      const cnt = allData.filter(r => (r.time || "").startsWith(todayStr)).length;
+      document.getElementById("todayCount").textContent = cnt;
+    }
+
+    async function load() {
+      const res = await fetch("/api/responses");
+      if (res.status === 401) { window.location.href = "/admin/login"; return; }
+      const data = await res.json();
+      allData = data.responses || [];
+      updateStats();
+      applyFilter();
+    }
+
+    function applyFilter() {
+      const q = document.getElementById("search").value.trim().toLowerCase();
+      const filtered = q
+        ? allData.filter(r => (r.name || "").toLowerCase().includes(q) || (r.phone || "").includes(q))
+        : allData;
+      render(filtered);
+    }
+
+    document.getElementById("tbody").addEventListener("click", async (e) => {
+      if (e.target.classList.contains("del")) {
+        const id = e.target.dataset.id;
+        if (!confirm("ต้องการลบรายการนี้ใช่หรือไม่?")) return;
+        const res = await fetch("/api/responses/" + id, { method: "DELETE" });
+        if (res.ok) load();
+      }
+    });
+
+    document.getElementById("search").addEventListener("input", applyFilter);
+    document.getElementById("refreshBtn").addEventListener("click", load);
+
+    document.getElementById("logoutBtn").addEventListener("click", async () => {
+      await fetch("/api/logout", { method: "POST" });
+      window.location.href = "/admin/login";
+    });
+
+    load();
+  </script>
+</body>
+</html>

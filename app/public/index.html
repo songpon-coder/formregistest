@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>แบบสอบถาม</title>
+  <style>
+    :root {
+      --primary: #2563eb; --primary-dark: #1d4ed8;
+      --bg: #f1f5f9; --card: #fff; --text: #0f172a;
+      --muted: #64748b; --border: #e2e8f0; --error: #dc2626; --success: #16a34a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, "Segoe UI", "Sarabun", Tahoma, sans-serif;
+      background: var(--bg); color: var(--text); margin: 0;
+      padding: 40px 16px; line-height: 1.6;
+    }
+    .container { max-width: 480px; margin: 0 auto; }
+    .card {
+      background: var(--card); border-radius: 16px; padding: 28px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+    }
+    h1 { font-size: 22px; margin: 0 0 4px; }
+    .subtitle { color: var(--muted); margin: 0 0 24px; font-size: 14px; }
+    label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px; }
+    .required { color: var(--error); }
+    input {
+      width: 100%; padding: 12px 14px; border: 1px solid var(--border);
+      border-radius: 10px; font-size: 16px; transition: border-color .15s, box-shadow .15s;
+    }
+    input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
+    .field { margin-bottom: 20px; }
+    .error-msg { color: var(--error); font-size: 13px; min-height: 18px; display: block; margin-top: 4px; }
+    button {
+      width: 100%; background: var(--primary); color: #fff; border: none;
+      padding: 14px; border-radius: 10px; font-size: 16px; font-weight: 700; cursor: pointer;
+    }
+    button:hover { background: var(--primary-dark); }
+    button:disabled { opacity: .6; cursor: not-allowed; }
+    .toast {
+      background: #f0fdf4; border: 1px solid #bbf7d0; color: var(--success);
+      padding: 14px 16px; border-radius: 10px; font-size: 14px; font-weight: 600;
+      margin-bottom: 16px; display: none; text-align: center;
+    }
+    .admin-link { text-align: center; margin-top: 20px; font-size: 13px; }
+    .admin-link a { color: var(--muted); text-decoration: none; }
+    .admin-link a:hover { color: var(--primary); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <h1>แบบสอบถาม</h1>
+      <p class="subtitle">กรุณากรอกชื่อและเบอร์โทรศัพท์ของท่าน</p>
+
+      <div class="toast" id="toast">✓ บันทึกข้อมูลเรียบร้อยแล้ว ขอบคุณค่ะ</div>
+
+      <form id="surveyForm" novalidate>
+        <div class="field">
+          <label for="name">ชื่อ-นามสกุล <span class="required">*</span></label>
+          <input type="text" id="name" name="name" placeholder="เช่น สมชาย ใจดี" autocomplete="name" />
+          <span class="error-msg" id="nameError"></span>
+        </div>
+        <div class="field">
+          <label for="phone">เบอร์โทรศัพท์ <span class="required">*</span></label>
+          <input type="tel" id="phone" name="phone" placeholder="เช่น 0812345678"
+                 autocomplete="tel" inputmode="numeric" maxlength="10" />
+          <span class="error-msg" id="phoneError"></span>
+        </div>
+        <button type="submit" id="submitBtn">ส่งข้อมูล</button>
+      </form>
+    </div>
+    <div class="admin-link"><a href="/admin">เข้าสู่ระบบหลังบ้าน →</a></div>
+  </div>
+
+  <script>
+    const form = document.getElementById("surveyForm");
+    const nameInput = document.getElementById("name");
+    const phoneInput = document.getElementById("phone");
+    const nameError = document.getElementById("nameError");
+    const phoneError = document.getElementById("phoneError");
+    const toast = document.getElementById("toast");
+    const submitBtn = document.getElementById("submitBtn");
+
+    phoneInput.addEventListener("input", () => {
+      phoneInput.value = phoneInput.value.replace(/\D/g, "");
+    });
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      nameError.textContent = "";
+      phoneError.textContent = "";
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = "กำลังส่ง...";
+
+      try {
+        const res = await fetch("/api/submit", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: nameInput.value.trim(), phone: phoneInput.value.trim() })
+        });
+        const data = await res.json();
+        if (data.ok) {
+          form.reset();
+          toast.style.display = "block";
+          setTimeout(() => { toast.style.display = "none"; }, 3500);
+          nameInput.focus();
+        } else if (data.errors) {
+          if (data.errors.name) nameError.textContent = data.errors.name;
+          if (data.errors.phone) phoneError.textContent = data.errors.phone;
+        }
+      } catch (err) {
+        phoneError.textContent = "เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่";
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "ส่งข้อมูล";
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+# ข้อมูลผู้ตอบแบบสอบถาม (PII) + บัญชี/รหัสผ่าน admin — ห้ามขึ้น public repo
+app/data/
+*.tmp
+
+# Claude Code local settings
+.claude/
+
+# โปรเจกต์อื่นในโฟลเดอร์เดียวกัน (ไม่เกี่ยวกับแบบสอบถาม)
+poker-gto-trainer/
+
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
