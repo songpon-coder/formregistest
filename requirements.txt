@@ -1,0 +1,2 @@
+# แอปนี้ใช้ Python standard library ล้วน ไม่มี dependency ภายนอก
+# ไฟล์นี้มีไว้เพื่อให้ Railway/Nixpacks ตรวจพบว่าเป็นโปรเจกต์ Python

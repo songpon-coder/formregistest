@@ -33,7 +33,7 @@ RESPONSES_FILE = os.path.join(DATA_DIR, "responses.json")
 CONFIG_FILE = os.path.join(DATA_DIR, "config.json")
 
 HOST = "0.0.0.0"
-PORT = 8000
+PORT = int(os.environ.get("PORT", 8000))  # Railway/แพลตฟอร์มคลาวด์กำหนด PORT มาให้
 
 PHONE_RE = re.compile(r"^0\d{8,9}$")
 SESSION_TTL = 60 * 60 * 8  # 8 ชั่วโมง
@@ -304,6 +304,7 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def main():
+    os.makedirs(DATA_DIR, exist_ok=True)  # data/ ถูก gitignore ไว้ สร้างใหม่บนเซิร์ฟเวอร์
     ensure_config()
     if not os.path.exists(RESPONSES_FILE):
         save_json(RESPONSES_FILE, [])
